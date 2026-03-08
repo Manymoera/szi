@@ -1,0 +1,97 @@
+/* static/style.css */
+
+body {
+
+    background: #121212;
+    color: #e0e0e0;
+    font-family: Arial;
+    margin: 0;
+
+}
+
+.container {
+
+    width: 1100px;
+    margin: auto;
+    padding: 40px;
+
+}
+
+.grid {
+
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+
+}
+
+.card {
+
+    background: #1e1e1e;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
+
+}
+
+h1 {
+    color: #00d084;
+}
+
+input,
+textarea {
+
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    background: #2a2a2a;
+    border: none;
+    color: white;
+
+}
+
+button {
+
+    background: #00d084;
+    border: none;
+    padding: 12px;
+    width: 100%;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+
+}
+
+button:hover {
+    background: #00b96f;
+}
+
+table {
+    border-collapse: collapse;
+    margin-bottom: 10px;
+}
+
+th,
+td {
+    padding: 4px;
+    text-align: center;
+}
+
+td input {
+    width: 60px;
+    text-align: right;
+    background: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    color: white;
+    padding: 4px;
+}
+
+th {
+    color: #00d084;
+}
+
+.b-header,
+.b-cell {
+    background-color: #333333;
+    border-left: 2px solid #00d084;
+}
