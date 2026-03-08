@@ -23,14 +23,13 @@
 
                 <h2>Конфигурация параметров</h2>
 
-                <label>ГИА (m)</label>
-                <input id="m" value="3" onchange="generateGrids()">
+                <label>Кол-во ГИА</label>
+                <input id="m" value="3">
 
-                <label>СЗИ (n)</label>
-                <input id="n" value="5" onchange="generateGrids()">
+                <label>Кол-во СЗИ</label>
+                <input id="n" value="5">
 
-                <label>λ</label>
-                <input id="lambda" value="0.5">
+                <button onclick="generateGrids()">Создать матрицы</button>
 
                 <h3>Импорт данных</h3>
 
@@ -40,11 +39,14 @@
                 <h3>Матрица A и вектор b</h3>
                 <div id="Ab_container"></div>
 
-                <h3>c</h3>
+                <h3>Вектор c</h3>
                 <div id="c_container"></div>
 
-                <h3>d</h3>
+                <h3>Вектор d</h3>
                 <div id="d_container"></div>
+
+                <label>Коэффициент λ</label>
+                <input id="lambda" value="0.5">
 
                 <button onclick="solve()">Запустить расчет</button>
 
@@ -92,7 +94,7 @@
             trHeader.appendChild(thEmpty);
             for (let j = 0; j < n; j++) {
                 let th = document.createElement("th");
-                th.textContent = `СЗИ ${j + 1}`;
+                th.textContent = ``;
                 trHeader.appendChild(th);
             }
             let thb = document.createElement("th");
@@ -105,7 +107,6 @@
             for (let i = 0; i < m; i++) {
                 let tr = document.createElement("tr");
                 let thRow = document.createElement("th");
-                thRow.textContent = `ГИА ${i + 1}`;
                 tr.appendChild(thRow);
                 for (let j = 0; j < n; j++) {
                     let td = document.createElement("td");
@@ -133,7 +134,7 @@
             let trCHeader = document.createElement("tr");
             for (let j = 0; j < n; j++) {
                 let th = document.createElement("th");
-                th.textContent = `СЗИ ${j + 1}`;
+                th.textContent = ``;
                 trCHeader.appendChild(th);
             }
             tableC.appendChild(trCHeader);
@@ -156,7 +157,7 @@
             let trDHeader = document.createElement("tr");
             for (let j = 0; j < n; j++) {
                 let th = document.createElement("th");
-                th.textContent = `СЗИ ${j + 1}`;
+                th.textContent = ``;
                 trDHeader.appendChild(th);
             }
             tableD.appendChild(trDHeader);
@@ -192,6 +193,22 @@
             generateGrids();
             setDefaults();
         };
+
+        // после создания сеток может потребоваться очистить значения
+        function clearValues() {
+            let m = parseInt(document.getElementById("m").value) || 0;
+            let n = parseInt(document.getElementById("n").value) || 0;
+            for (let i = 0; i < m; i++) {
+                for (let j = 0; j < n; j++) {
+                    document.getElementById(`A_${i}_${j}`).value = '';
+                }
+                document.getElementById(`b_${i}`).value = '';
+            }
+            for (let j = 0; j < n; j++) {
+                document.getElementById(`c_${j}`).value = '';
+                document.getElementById(`d_${j}`).value = '';
+            }
+        }
 
         function uploadFile() {
 

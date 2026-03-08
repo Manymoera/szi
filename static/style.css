@@ -1,12 +1,92 @@
 /* static/style.css */
 
 body {
-
     background: #121212;
     color: #e0e0e0;
     font-family: Arial;
     margin: 0;
+}
 
+.container {
+    width: 1100px;
+    margin: auto;
+    padding: 40px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.card {
+    background: #1e1e1e;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
+}
+
+/* Новый стиль для идеального выравнивания */
+.controls-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.controls-group label {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Ключевое свойство для одинаковой ширины */
+input,
+button,
+.controls-group label {
+    box-sizing: border-box;
+    width: 100%;
+}
+
+input {
+    padding: 8px;
+    background: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    color: white;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+
+button {
+    background: #00d084;
+    border: none;
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 5px;
+}
+
+.matrix-vector-container {
+    display: flex;
+    align-items: flex-start;
+}
+
+#A_container {
+    margin-right: 0.5cm;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+td input {
+    width: 60px;
+    text-align: center;
+    background: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    color: white;
+    padding: 4px;
 }
 
 .container {
@@ -35,7 +115,7 @@ body {
 }
 
 h1 {
-    color: #00d084;
+    color: #ffffff;
 }
 
 input,
@@ -52,7 +132,7 @@ textarea {
 
 button {
 
-    background: #00d084;
+    background: #ffffff;
     border: none;
     padding: 12px;
     width: 100%;
@@ -87,11 +167,10 @@ td input {
 }
 
 th {
-    color: #00d084;
+    color: #ffffff;
 }
 
 .b-header,
 .b-cell {
-    background-color: #333333;
-    border-left: 2px solid #00d084;
+    padding-left: 0.5cm;
 }
