@@ -13,9 +13,7 @@ app = Flask(__name__)
 
 def get_solver_path():
     if hasattr(sys, '_MEIPASS'):
-        # Внутри .exe файл будет лежать в корне временной папки
         return os.path.join(sys._MEIPASS, "cbc.exe")
-    # Путь для запуска из IDE (укажите тот, который нашли)
     return r"D:\Python projects\SZI\.venv\Lib\site-packages\pulp\solverdir\cbc\win\i64\cbc.exe"
 
 def load_security_data(file_path):
@@ -42,7 +40,6 @@ def load_security_data(file_path):
     line_idx += 1
     lam = float(lines[line_idx])
 
-    # сортировка d по убыванию
     indices = np.argsort(d)[::-1]
 
     return {
@@ -174,7 +171,6 @@ def solve_problem(data):
 
     selected.sort()
 
-    # map best_x back to original ordering
     n = data["n"]
     x_orig = [0] * n
     for sorted_pos, val in enumerate(best_x):
