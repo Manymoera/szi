@@ -1,5 +1,3 @@
-# app.py
-
 from flask import Flask, render_template, request, jsonify
 import numpy as np
 import pulp
@@ -204,7 +202,8 @@ def upload():
         "A": data["A"].tolist(),
         "b": data["b"].tolist(),
         "c": data["c"].tolist(),
-        "d": data["d"].tolist()
+        "d": data["d"].tolist(),
+        "original_indices": data["original_indices"].tolist()
     })
 
 
@@ -221,7 +220,7 @@ def solve():
         "c": np.array(data["c"]),
         "d": np.array(data["d"]),
         "lambda": float(data["lambda"]),
-        "original_indices": np.arange(len(data["c"]))
+        "original_indices": np.array(data["original_indices"])
     }
 
     result = solve_problem(dataset)

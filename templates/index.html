@@ -1,5 +1,3 @@
-<!-- templates/index.html -->
-
 <!DOCTYPE html>
 <html>
 
@@ -72,7 +70,7 @@
     </div>
 
     <script>
-
+        let original_indices = [];
         const defaultA = [
             [15, 10, 5, 4, 3],
             [27, 18, 12, 6, 6],
@@ -232,6 +230,8 @@
                     document.getElementById("m").value = data.m
                     document.getElementById("n").value = data.n
                     document.getElementById("lambda").value = data.lambda
+                    
+                    original_indices = data.original_indices;
 
                     generateGrids();
 
@@ -283,6 +283,10 @@
                 d.push(document.getElementById(`d_${j}`).valueAsNumber);
             }
 
+            if (original_indices.length === 0) {
+                original_indices = Array.from({length: n}, (_, i) => i);
+            }
+
             fetch("/solve", {
 
                 method: "POST",
@@ -294,11 +298,12 @@
                 body: JSON.stringify({
                     m: m,
                     n: n,
-                    lambda: lam,
                     A: A,
                     b: b,
                     c: c,
-                    d: d
+                    d: d,
+                    lambda: lam,
+                    original_indices: original_indices
                 })
 
             })
