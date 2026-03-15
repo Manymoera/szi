@@ -3,11 +3,20 @@
 from flask import Flask, render_template, request, jsonify
 import numpy as np
 import pulp
+import os
+import sys
+import webbrowser
 from concurrent.futures import ProcessPoolExecutor
+import multiprocessing
 
 app = Flask(__name__)
 
-# ---------- ЗАГРУЗКА ДАННЫХ ----------
+def get_solver_path():
+    if hasattr(sys, '_MEIPASS'):
+        # Внутри .exe файл будет лежать в корне временной папки
+        return os.path.join(sys._MEIPASS, "cbc.exe")
+    # Путь для запуска из IDE (укажите тот, который нашли)
+    return r"D:\Python projects\SZI\.venv\Lib\site-packages\pulp\solverdir\cbc\win\i64\cbc.exe"
 
 def load_security_data(file_path):
 
@@ -47,7 +56,6 @@ def load_security_data(file_path):
         "original_indices": indices
     }
 
-# ---------- РЕШЕНИЕ ЗАДАЧИ ----------
 
 def solve_knapsack_pulp(c, A, b):
 
@@ -63,7 +71,8 @@ def solve_knapsack_pulp(c, A, b):
     for i in range(m):
         prob += pulp.lpSum(A[i][j] * x[j] for j in range(n)) <= b[i]
 
-    prob.solve(pulp.PULP_CBC_CMD(msg=0))
+    solver = pulp.COIN_CMD(path=get_solver_path(), msg=0)
+    prob.solve(solver)
 
     if pulp.LpStatus[prob.status] == "Optimal":
         return [int(pulp.value(x[j])) for j in range(n)]
@@ -109,7 +118,8 @@ def solve_subproblem(args):
     for i in range(m):
         prob += pulp.lpSum(A[i][j] * x[j] for j in range(num_vars)) <= b[i]
 
-    prob.solve(pulp.PULP_CBC_CMD(msg=0))
+    solver = pulp.COIN_CMD(path=get_solver_path(), msg=0)
+    prob.solve(solver)
 
     if pulp.LpStatus[prob.status] == "Optimal":
 
@@ -164,9 +174,17 @@ def solve_problem(data):
 
     selected.sort()
 
-    return best_F, selected
+    # map best_x back to original ordering
+    n = data["n"]
+    x_orig = [0] * n
+    for sorted_pos, val in enumerate(best_x):
+        orig_pos = int(original[sorted_pos])
+        x_orig[orig_pos] = val
 
-# ---------- ROUTES ----------
+    print(f"Optimal x vector: {x_orig}")
+
+    return best_F, selected, x_orig
+
 
 @app.route("/")
 def index():
@@ -215,13 +233,16 @@ def solve():
     if result is None:
         return jsonify({"error": "No solution"})
 
-    F, indices = result
+    F, indices, x_vec = result
 
     return jsonify({
         "F": round(F, 4),
-        "indices": indices
+        "indices": indices,
+        "x": x_vec
     })
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
+    webbrowser.open("http://127.0.0.1:8000")
     app.run(host="127.0.0.1", port=8000)

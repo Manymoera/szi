@@ -5,7 +5,7 @@
 
 <head>
 
-    <title>SZI Optimization</title>
+    <title>СЗИ</title>
 
     <link rel="stylesheet" href="/static/style.css">
 
@@ -15,7 +15,7 @@
 
     <div class="container">
 
-        <h1>SZI Optimization System</h1>
+        <h1>Оптимизация выбора СЗИ</h1>
 
         <div class="grid">
 
@@ -61,6 +61,9 @@
 
                 <p>Выбранные СЗИ</p>
                 <h2 id="resultIndices">-</h2>
+
+                <p>Оптимальный вектор x </p>
+                <h2 id="resultX">-</h2>
 
             </div>
 
@@ -307,6 +310,10 @@
                     } else {
                         document.getElementById("resultF").innerText = data.F
                         document.getElementById("resultIndices").innerText = data.indices.join(", ")
+                        if (data.x) {
+                            let xStr = data.x.map((val, idx) => `x[${idx}]=${val}`).join(", ");
+                            document.getElementById("resultX").innerText = xStr;
+                        }
                     }
 
                 })
