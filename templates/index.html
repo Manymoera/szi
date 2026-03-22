@@ -27,7 +27,7 @@
                 <label>Кол-во СЗИ</label>
                 <input id="n" value="5">
 
-                <button onclick="generateGrids()">Создать матрицы</button>
+                <button onclick="generateGrids()">Создать матрицу</button>
 
                 <h3>Импорт данных</h3>
 
@@ -46,7 +46,7 @@
                 <label>Коэффициент λ</label>
                 <input id="lambda" value="0.5">
 
-                <button onclick="solve()">Запустить расчет</button>
+                <button onclick="solve()">Получить решение</button>
 
             </div>
 
@@ -195,7 +195,6 @@
             setDefaults();
         };
 
-        // после создания сеток может потребоваться очистить значения
         function clearValues() {
             let m = parseInt(document.getElementById("m").value) || 0;
             let n = parseInt(document.getElementById("n").value) || 0;
