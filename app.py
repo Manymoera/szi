@@ -26,31 +26,109 @@ def load_security_data(file_path):
         matrix.append(list(map(float, lines[i].split())))
     A = np.array(matrix)
 
-    line_idx = m + 1
-    b = np.array(list(map(float, lines[line_idx].split())))
+    idx = m + 1
 
-    line_idx += 1
-    c = np.array(list(map(float, lines[line_idx].split())))
+    b = np.array(list(map(float, lines[idx].split())))
+    idx += 1
 
-    line_idx += 1
-    d = np.array(list(map(float, lines[line_idx].split())))
+    remaining = len(lines) - idx
 
-    line_idx += 1
-    lam = float(lines[line_idx])
+    # =========================
+    # АВТООПРЕДЕЛЕНИЕ ТИПА
+    # =========================
 
-    indices = np.argsort(d)[::-1]
+    # --- НЕЧЕТКАЯ (треугольная) ---
+    if remaining == 7:
 
-    return {
-        "m": m,
-        "n": n,
-        "A": A[:, indices],
-        "b": b,
-        "c": c[indices],
-        "d": d[indices],
-        "lambda": lam,
-        "original_indices": indices
-    }
+        cL = np.array(list(map(float, lines[idx].split())))
+        idx += 1
 
+        cM = np.array(list(map(float, lines[idx].split())))
+        idx += 1
+
+        cR = np.array(list(map(float, lines[idx].split())))
+        idx += 1
+
+        dL = np.array(list(map(float, lines[idx].split())))
+        idx += 1
+
+        dM = np.array(list(map(float, lines[idx].split())))
+        idx += 1
+
+        dR = np.array(list(map(float, lines[idx].split())))
+        idx += 1
+
+        lam = float(lines[idx])
+
+        return {
+            "type": "fuzzy",
+            "m": m,
+            "n": n,
+            "A": A,
+            "b": b,
+            "cL": cL,
+            "cM": cM,
+            "cR": cR,
+            "dL": dL,
+            "dM": dM,
+            "dR": dR,
+            "lambda": lam
+        }
+
+    # --- ОБЫЧНАЯ ЗАДАЧА ---
+    elif remaining == 3:
+        c = np.array(list(map(float, lines[idx].split())))
+        idx += 1
+
+        d = np.array(list(map(float, lines[idx].split())))
+        idx += 1
+
+        lam = float(lines[idx])
+
+        indices = np.argsort(d)[::-1]
+
+        return {
+            "type": "classic",
+            "m": m,
+            "n": n,
+            "A": A[:, indices],
+            "b": b,
+            "c": c[indices],
+            "d": d[indices],
+            "lambda": lam,
+            "original_indices": indices
+        }
+
+    else:
+        raise ValueError("Неизвестный формат файла")
+
+
+def defuzzify_triangular(cL, cM, cR, dL, dM, dR, method="centroid", alpha=0.5):
+
+    if method == "centroid":
+        c = (cL + cM + cR) / 3
+        d = (dL + dM + dR) / 3
+
+    elif method == "mean_max":
+        c = cM
+        d = dM
+
+    elif method == "optimistic":
+        c = cR
+        d = dR
+
+    elif method == "pessimistic":
+        c = cL
+        d = dL
+
+    elif method == "hurwicz":
+        c = alpha * cR + (1 - alpha) * cL
+        d = alpha * dR + (1 - alpha) * dL
+
+    else:
+        raise ValueError("Неизвестный метод")
+
+    return c, d
 
 def solve_knapsack_pulp(c, A, b):
 
@@ -189,22 +267,39 @@ def index():
 def upload():
 
     file = request.files["file"]
-
     path = "temp.txt"
     file.save(path)
 
     data = load_security_data(path)
 
-    return jsonify({
-        "m": data["m"],
-        "n": data["n"],
-        "lambda": data["lambda"],
-        "A": data["A"].tolist(),
-        "b": data["b"].tolist(),
-        "c": data["c"].tolist(),
-        "d": data["d"].tolist(),
-        "original_indices": data["original_indices"].tolist()
-    })
+    if data["type"] == "classic":
+        return jsonify({
+            "type": "classic",
+            "m": data["m"],
+            "n": data["n"],
+            "lambda": data["lambda"],
+            "A": data["A"].tolist(),
+            "b": data["b"].tolist(),
+            "c": data["c"].tolist(),
+            "d": data["d"].tolist(),
+            "original_indices": data["original_indices"].tolist()
+        })
+
+    else:
+        return jsonify({
+            "type": "fuzzy",
+            "m": data["m"],
+            "n": data["n"],
+            "lambda": data["lambda"],
+            "A": data["A"].tolist(),
+            "b": data["b"].tolist(),
+            "cL": data["cL"].tolist(),
+            "cM": data["cM"].tolist(),
+            "cR": data["cR"].tolist(),
+            "dL": data["dL"].tolist(),
+            "dM": data["dM"].tolist(),
+            "dR": data["dR"].tolist()
+        })
 
 
 @app.route("/solve", methods=["POST"])
@@ -212,16 +307,60 @@ def solve():
 
     data = request.json
 
-    dataset = {
-        "m": int(data["m"]),
-        "n": int(data["n"]),
-        "A": np.array(data["A"]),
-        "b": np.array(data["b"]),
-        "c": np.array(data["c"]),
-        "d": np.array(data["d"]),
-        "lambda": float(data["lambda"]),
-        "original_indices": np.array(data["original_indices"])
-    }
+    # =====================
+    # НЕЧЕТКАЯ ЗАДАЧА
+    # =====================
+    if data.get("type") == "fuzzy":
+
+        cL = np.array(data["cL"])
+        cM = np.array(data["cM"])
+        cR = np.array(data["cR"])
+
+        dL = np.array(data["dL"])
+        dM = np.array(data["dM"])
+        dR = np.array(data["dR"])
+
+        method = data.get("defuzz", "centroid")
+        alpha = float(data.get("alpha", 0.5))
+
+        c, d = defuzzify_triangular(cL, cM, cR, dL, dM, dR, method, alpha)
+
+        indices = np.argsort(d)[::-1]
+
+        dataset = {
+            "m": int(data["m"]),
+            "n": int(data["n"]),
+            "A": np.array(data["A"])[:, indices],
+            "b": np.array(data["b"]),
+            "c": c[indices],
+            "d": d[indices],
+            "lambda": float(data["lambda"]),
+            "original_indices": indices
+        }
+
+    # =====================
+    # ОБЫЧНАЯ ЗАДАЧА
+    # =====================
+    else:
+
+        n = int(data["n"])
+
+        # если нет original_indices → создаём по умолчанию
+        if "original_indices" in data:
+            original_indices = np.array(data["original_indices"])
+        else:
+            original_indices = np.arange(n)
+
+        dataset = {
+            "m": int(data["m"]),
+            "n": n,
+            "A": np.array(data["A"]),
+            "b": np.array(data["b"]),
+            "c": np.array(data["c"]),
+            "d": np.array(data["d"]),
+            "lambda": float(data["lambda"]),
+            "original_indices": original_indices
+        }
 
     result = solve_problem(dataset)
 

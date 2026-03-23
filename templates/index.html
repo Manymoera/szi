@@ -2,11 +2,8 @@
 <html>
 
 <head>
-
     <title>СЗИ</title>
-
     <link rel="stylesheet" href="/static/style.css">
-
 </head>
 
 <body>
@@ -30,12 +27,26 @@
                 <button onclick="generateGrids()">Создать матрицу</button>
 
                 <h3>Импорт данных</h3>
-
                 <input type="file" id="fileInput">
                 <button onclick="uploadFile()">Загрузить из файла</button>
 
                 <h3>Матрица A и вектор b</h3>
                 <div id="Ab_container"></div>
+
+                <label>Тип задачи</label>
+                <select id="mode" onchange="toggleFuzzy()">
+                    <option value="classic">Обычная</option>
+                    <option value="fuzzy">Нечеткая</option>
+                </select>
+
+                <label>Метод дефаззификации</label>
+                <select id="defuzz">
+                    <option value="centroid">Среднее</option>
+                    <option value="optimistic">Оптимистичный</option>
+                    <option value="pessimistic">Пессимистичный</option>
+                    <option value="mean_max">Вероятное</option>
+                    <option value="hurwicz">Гурвиц</option>
+                </select>
 
                 <h3>Вектор c</h3>
                 <div id="c_container"></div>
@@ -60,7 +71,7 @@
                 <p>Выбранные СЗИ</p>
                 <h2 id="resultIndices">-</h2>
 
-                <p>Оптимальный вектор x </p>
+                <p>Оптимальный вектор x</p>
                 <h2 id="resultX">-</h2>
 
             </div>
@@ -70,167 +81,136 @@
     </div>
 
     <script>
+
         let original_indices = [];
-        const defaultA = [
-            [15, 10, 5, 4, 3],
-            [27, 18, 12, 6, 6],
-            [40, 25, 12, 11, 8]
-        ];
-        const defaultB = [20, 39, 48];
-        const defaultC = [90, 76, 30, 35, 30];
-        const defaultD = [40, 20, 14, 12, 10];
+
+        function toggleFuzzy() {
+            generateGrids();
+        }
 
         function generateGrids() {
-            let m = parseInt(document.getElementById("m").value) || 0;
-            let n = parseInt(document.getElementById("n").value) || 0;
 
-            // Ab
-            let Ab_container = document.getElementById("Ab_container");
-            Ab_container.innerHTML = '';
-            let tableAb = document.createElement("table");
+            let m = +document.getElementById("m").value;
+            let n = +document.getElementById("n").value;
+            let mode = document.getElementById("mode").value;
 
-            // Header row
-            let trHeader = document.createElement("tr");
-            let thEmpty = document.createElement("th");
-            trHeader.appendChild(thEmpty);
-            for (let j = 0; j < n; j++) {
-                let th = document.createElement("th");
-                th.textContent = ``;
-                trHeader.appendChild(th);
-            }
+            let Ab = document.getElementById("Ab_container");
+            Ab.innerHTML = "";
+
+            let table = document.createElement("table");
+
+            let header = document.createElement("tr");
+            header.appendChild(document.createElement("th"));
+
+            for (let j = 0; j < n; j++) header.appendChild(document.createElement("th"));
+
             let thb = document.createElement("th");
-            thb.textContent = "b";
-            thb.className = "b-header";
-            trHeader.appendChild(thb);
-            tableAb.appendChild(trHeader);
+            thb.innerText = "b";
+            header.appendChild(thb);
 
-            // Data rows
+            table.appendChild(header);
+
             for (let i = 0; i < m; i++) {
+
                 let tr = document.createElement("tr");
-                let thRow = document.createElement("th");
-                tr.appendChild(thRow);
+                tr.appendChild(document.createElement("th"));
+
                 for (let j = 0; j < n; j++) {
+
                     let td = document.createElement("td");
                     let inp = document.createElement("input");
+
                     inp.type = "number";
                     inp.id = `A_${i}_${j}`;
+
                     td.appendChild(inp);
                     tr.appendChild(td);
                 }
+
                 let tdB = document.createElement("td");
-                tdB.className = "b-cell";
                 let inpB = document.createElement("input");
+
                 inpB.type = "number";
                 inpB.id = `b_${i}`;
+
                 tdB.appendChild(inpB);
                 tr.appendChild(tdB);
-                tableAb.appendChild(tr);
-            }
-            Ab_container.appendChild(tableAb);
 
-            // c
-            let c_container = document.getElementById("c_container");
-            c_container.innerHTML = '';
-            let tableC = document.createElement("table");
-            let trCHeader = document.createElement("tr");
-            for (let j = 0; j < n; j++) {
-                let th = document.createElement("th");
-                th.textContent = ``;
-                trCHeader.appendChild(th);
+                table.appendChild(tr);
             }
-            tableC.appendChild(trCHeader);
-            let trC = document.createElement("tr");
-            for (let j = 0; j < n; j++) {
-                let td = document.createElement("td");
-                let inp = document.createElement("input");
-                inp.type = "number";
-                inp.id = `c_${j}`;
-                td.appendChild(inp);
-                trC.appendChild(td);
-            }
-            tableC.appendChild(trC);
-            c_container.appendChild(tableC);
 
-            // d
-            let d_container = document.getElementById("d_container");
-            d_container.innerHTML = '';
-            let tableD = document.createElement("table");
-            let trDHeader = document.createElement("tr");
-            for (let j = 0; j < n; j++) {
-                let th = document.createElement("th");
-                th.textContent = ``;
-                trDHeader.appendChild(th);
-            }
-            tableD.appendChild(trDHeader);
-            let trD = document.createElement("tr");
-            for (let j = 0; j < n; j++) {
-                let td = document.createElement("td");
-                let inp = document.createElement("input");
-                inp.type = "number";
-                inp.id = `d_${j}`;
-                td.appendChild(inp);
-                trD.appendChild(td);
-            }
-            tableD.appendChild(trD);
-            d_container.appendChild(tableD);
+            Ab.appendChild(table);
+
+            createVector("c_container", "c", n, mode);
+            createVector("d_container", "d", n, mode);
         }
 
-        function setDefaults() {
-            let m = 3;
-            let n = 5;
-            for (let i = 0; i < m; i++) {
-                for (let j = 0; j < n; j++) {
-                    document.getElementById(`A_${i}_${j}`).value = defaultA[i][j];
-                }
-                document.getElementById(`b_${i}`).value = defaultB[i];
-            }
-            for (let j = 0; j < n; j++) {
-                document.getElementById(`c_${j}`).value = defaultC[j];
-                document.getElementById(`d_${j}`).value = defaultD[j];
-            }
-        }
+        function createVector(containerId, prefix, n, mode) {
 
-        window.onload = () => {
-            generateGrids();
-            setDefaults();
-        };
+            let container = document.getElementById(containerId);
+            container.innerHTML = "";
 
-        function clearValues() {
-            let m = parseInt(document.getElementById("m").value) || 0;
-            let n = parseInt(document.getElementById("n").value) || 0;
-            for (let i = 0; i < m; i++) {
-                for (let j = 0; j < n; j++) {
-                    document.getElementById(`A_${i}_${j}`).value = '';
-                }
-                document.getElementById(`b_${i}`).value = '';
-            }
+            let table = document.createElement("table");
+            let tr = document.createElement("tr");
+
             for (let j = 0; j < n; j++) {
-                document.getElementById(`c_${j}`).value = '';
-                document.getElementById(`d_${j}`).value = '';
+
+                let td = document.createElement("td");
+
+                if (mode === "classic") {
+
+                    let inp = document.createElement("input");
+                    inp.type = "number";
+                    inp.id = `${prefix}_${j}`;
+                    td.appendChild(inp);
+
+                } else {
+
+                    let L = document.createElement("input");
+                    L.type = "number";
+                    L.placeholder = "L";
+                    L.id = `${prefix}_L_${j}`;
+
+                    let M = document.createElement("input");
+                    M.type = "number";
+                    M.placeholder = "M";
+                    M.id = `${prefix}_M_${j}`;
+
+                    let R = document.createElement("input");
+                    R.type = "number";
+                    R.placeholder = "R";
+                    R.id = `${prefix}_R_${j}`;
+
+                    td.append(L, " ", M, " ", R);
+                }
+
+                tr.appendChild(td);
             }
+
+            table.appendChild(tr);
+            container.appendChild(table);
         }
 
         function uploadFile() {
 
-            let fileInput = document.getElementById("fileInput")
+            let file = document.getElementById("fileInput").files[0];
 
-            let formData = new FormData()
-            formData.append("file", fileInput.files[0])
+            let formData = new FormData();
+            formData.append("file", file);
 
             fetch("/upload", {
-
                 method: "POST",
                 body: formData
-
             })
                 .then(r => r.json())
                 .then(data => {
 
-                    document.getElementById("m").value = data.m
-                    document.getElementById("n").value = data.n
-                    document.getElementById("lambda").value = data.lambda
-                    
-                    original_indices = data.original_indices;
+                    document.getElementById("m").value = data.m;
+                    document.getElementById("n").value = data.n;
+                    document.getElementById("lambda").value = data.lambda;
+
+                    // 👉 ВАЖНО: переключаем режим
+                    document.getElementById("mode").value = data.type;
 
                     generateGrids();
 
@@ -243,86 +223,107 @@
                         }
                         document.getElementById(`b_${i}`).value = data.b[i];
                     }
-                    for (let j = 0; j < n; j++) {
-                        document.getElementById(`c_${j}`).value = data.c[j];
-                        document.getElementById(`d_${j}`).value = data.d[j];
+
+                    // --- CLASSIC ---
+                    if (data.type === "classic") {
+                        for (let j = 0; j < n; j++) {
+                            document.getElementById(`c_${j}`).value = data.c[j];
+                            document.getElementById(`d_${j}`).value = data.d[j];
+                        }
                     }
 
-                })
+                    // --- FUZZY ---
+                    if (data.type === "fuzzy") {
 
+                        for (let j = 0; j < n; j++) {
+
+                            document.getElementById(`c_L_${j}`).value = data.cL[j];
+                            document.getElementById(`c_M_${j}`).value = data.cM[j];
+                            document.getElementById(`c_R_${j}`).value = data.cR[j];
+
+                            document.getElementById(`d_L_${j}`).value = data.dL[j];
+                            document.getElementById(`d_M_${j}`).value = data.dM[j];
+                            document.getElementById(`d_R_${j}`).value = data.dR[j];
+                        }
+                    }
+
+                });
         }
 
         function solve() {
 
-            let m = parseInt(document.getElementById("m").value);
-            let n = parseInt(document.getElementById("n").value);
-            let lam = document.getElementById("lambda").value;
+            let m = +document.getElementById("m").value;
+            let n = +document.getElementById("n").value;
+            let mode = document.getElementById("mode").value;
+            let method = document.getElementById("defuzz").value;
 
             let A = [];
+            let b = [];
+
             for (let i = 0; i < m; i++) {
                 let row = [];
                 for (let j = 0; j < n; j++) {
                     row.push(document.getElementById(`A_${i}_${j}`).valueAsNumber);
                 }
                 A.push(row);
-            }
-
-            let b = [];
-            for (let i = 0; i < m; i++) {
                 b.push(document.getElementById(`b_${i}`).valueAsNumber);
             }
 
-            let c = [];
-            for (let j = 0; j < n; j++) {
-                c.push(document.getElementById(`c_${j}`).valueAsNumber);
-            }
+            let payload = { m, n, A, b, lambda: +document.getElementById("lambda").value };
 
-            let d = [];
-            for (let j = 0; j < n; j++) {
-                d.push(document.getElementById(`d_${j}`).valueAsNumber);
-            }
+            if (mode === "classic") {
 
-            if (original_indices.length === 0) {
-                original_indices = Array.from({length: n}, (_, i) => i);
+                payload.type = "classic";
+                payload.c = [];
+                payload.d = [];
+
+                for (let j = 0; j < n; j++) {
+                    payload.c.push(document.getElementById(`c_${j}`).valueAsNumber);
+                    payload.d.push(document.getElementById(`d_${j}`).valueAsNumber);
+                }
+
+            } else {
+
+                payload.type = "fuzzy";
+
+                payload.cL = [];
+                payload.cM = [];
+                payload.cR = [];
+
+                payload.dL = [];
+                payload.dM = [];
+                payload.dR = [];
+
+                for (let j = 0; j < n; j++) {
+
+                    payload.cL.push(document.getElementById(`c_L_${j}`).valueAsNumber);
+                    payload.cM.push(document.getElementById(`c_M_${j}`).valueAsNumber);
+                    payload.cR.push(document.getElementById(`c_R_${j}`).valueAsNumber);
+
+                    payload.dL.push(document.getElementById(`d_L_${j}`).valueAsNumber);
+                    payload.dM.push(document.getElementById(`d_M_${j}`).valueAsNumber);
+                    payload.dR.push(document.getElementById(`d_R_${j}`).valueAsNumber);
+                }
+
+                payload.defuzz = method;
             }
 
             fetch("/solve", {
-
                 method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-                    m: m,
-                    n: n,
-                    A: A,
-                    b: b,
-                    c: c,
-                    d: d,
-                    lambda: lam,
-                    original_indices: original_indices
-                })
-
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
             })
                 .then(r => r.json())
                 .then(data => {
 
-                    if (data.error) {
-                        alert(data.error);
-                    } else {
-                        document.getElementById("resultF").innerText = data.F
-                        document.getElementById("resultIndices").innerText = data.indices.join(", ")
-                        if (data.x) {
-                            let xStr = data.x.map((val, idx) => `x[${idx}]=${val}`).join(", ");
-                            document.getElementById("resultX").innerText = xStr;
-                        }
-                    }
-
-                })
-
+                    document.getElementById("resultF").innerText = data.F;
+                    document.getElementById("resultIndices").innerText = data.indices.join(", ");
+                    document.getElementById("resultX").innerText =
+                        data.x.map((v, i) => `x[${i}]=${v}`).join(", ");
+                });
         }
+
+        window.onload = generateGrids;
 
     </script>
 
