@@ -1,14 +1,20 @@
 /* static/style.css */
 
+* {
+    box-sizing: border-box;
+}
+
 body {
-    background: #121212;
-    color: #e0e0e0;
+    background: linear-gradient(to bottom, #353636, #192a41);
+    background-attachment: fixed;
+    color: #ffffff;
     font-family: Arial;
     margin: 0;
 }
 
 .container {
-    width: 1100px;
+    width: 100%;
+    max-width: 1200px;
     margin: auto;
     padding: 40px;
 }
@@ -19,14 +25,6 @@ body {
     gap: 30px;
 }
 
-.card {
-    background: #1e1e1e;
-    padding: 25px;
-    border-radius: 10px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
-}
-
-/* Новый стиль для идеального выравнивания */
 .controls-group {
     display: flex;
     flex-direction: column;
@@ -40,30 +38,12 @@ body {
     width: 100%;
 }
 
-/* Ключевое свойство для одинаковой ширины */
-input,
-button,
-.controls-group label {
-    box-sizing: border-box;
-    width: 100%;
-}
-
 input {
     padding: 8px;
     background: #2a2a2a;
     border: 1px solid #3a3a3a;
     color: white;
     border-radius: 4px;
-    margin-top: 5px;
-}
-
-button {
-    background: #00d084;
-    border: none;
-    padding: 12px;
-    font-size: 16px;
-    border-radius: 6px;
-    cursor: pointer;
     margin-top: 5px;
 }
 
@@ -106,16 +86,17 @@ td input {
 }
 
 .card {
-
     background: #1e1e1e;
     padding: 25px;
     border-radius: 10px;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
-
+    margin-bottom: 30px;
+    width: 100%;
+    overflow: hidden;
 }
 
 h1 {
-    color: #ffffff;
+    color: #c5c5c5;
 }
 
 input,
@@ -131,19 +112,25 @@ textarea {
 }
 
 button {
+    width: 100% !important; /* Занимают всю ширину карточки */
+    display: block;
+    margin-bottom: 15px;
+}
+
+button {
 
     background: #ffffff;
     border: none;
     padding: 12px;
-    width: 100%;
     font-size: 16px;
     border-radius: 6px;
     cursor: pointer;
+    width: 100%;
 
 }
 
 button:hover {
-    background: #00b96f;
+    background: #a9b6c9;
 }
 
 table {
@@ -173,4 +160,33 @@ th {
 .b-header,
 .b-cell {
     padding-left: 0.5cm;
+}
+
+#m, #n, #fileInput, #lambda {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 20px;
+    background: #2a2a2a;
+    border: none;
+    color: white;
+}
+
+#m, #n, #lambda, #fileInput, button{
+    width: 100%;
+    display: block;
+    margin-bottom: 15px;
+}
+
+#Ab_container, #c_container, #d_container {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+}
+
+td input {
+    width: 60px !important;
+    text-align: center;
+    margin-bottom: 0;
 }
