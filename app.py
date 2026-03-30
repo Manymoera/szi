@@ -6,6 +6,7 @@ import sys
 import webbrowser
 from concurrent.futures import ProcessPoolExecutor
 import multiprocessing
+import time
 
 app = Flask(__name__)
 
@@ -14,49 +15,63 @@ def get_solver_path():
         return os.path.join(sys._MEIPASS, "cbc.exe")
     return r"D:\Python projects\SZI\.venv\Lib\site-packages\pulp\solverdir\cbc\win\i64\cbc.exe"
 
+def read_numbers(lines, start_idx, count):
+    values = []
+    idx = start_idx
+
+    while len(values) < count and idx < len(lines):
+        values.extend(map(float, lines[idx].split()))
+        idx += 1
+
+    if len(values) < count:
+        raise ValueError(f"Недостаточно данных: ожидалось {count}, получено {len(values)}")
+
+    return np.array(values[:count]), idx
+
+
 def load_security_data(file_path):
 
     with open(file_path, 'r') as f:
         lines = [line.strip() for line in f.readlines() if line.strip()]
 
+    # =====================
+    # ЧТЕНИЕ m, n
+    # =====================
     m, n = map(int, lines[0].split())
 
-    matrix = []
-    for i in range(1, m + 1):
-        matrix.append(list(map(float, lines[i].split())))
-    A = np.array(matrix)
+    idx = 1
 
-    idx = m + 1
+    # =====================
+    # ЧТЕНИЕ A (m x n)
+    # =====================
+    A = []
 
-    b = np.array(list(map(float, lines[idx].split())))
-    idx += 1
+    for _ in range(m):
+        row, idx = read_numbers(lines, idx, n)
+        A.append(row)
 
-    remaining = len(lines) - idx
+    A = np.array(A)
 
-    # =========================
-    # АВТООПРЕДЕЛЕНИЕ ТИПА
-    # =========================
+    # =====================
+    # ЧТЕНИЕ b
+    # =====================
+    b, idx = read_numbers(lines, idx, m)
 
-    # --- НЕЧЕТКАЯ (треугольная) ---
-    if remaining == 7:
+    # =====================
+    # ОПРЕДЕЛЕНИЕ ТИПА
+    # =====================
+    remaining_lines = len(lines) - idx
 
-        cL = np.array(list(map(float, lines[idx].split())))
-        idx += 1
+    # ========= НЕЧЕТКАЯ =========
+    if remaining_lines >= 7:
 
-        cM = np.array(list(map(float, lines[idx].split())))
-        idx += 1
+        cL, idx = read_numbers(lines, idx, n)
+        cM, idx = read_numbers(lines, idx, n)
+        cR, idx = read_numbers(lines, idx, n)
 
-        cR = np.array(list(map(float, lines[idx].split())))
-        idx += 1
-
-        dL = np.array(list(map(float, lines[idx].split())))
-        idx += 1
-
-        dM = np.array(list(map(float, lines[idx].split())))
-        idx += 1
-
-        dR = np.array(list(map(float, lines[idx].split())))
-        idx += 1
+        dL, idx = read_numbers(lines, idx, n)
+        dM, idx = read_numbers(lines, idx, n)
+        dR, idx = read_numbers(lines, idx, n)
 
         lam = float(lines[idx])
 
@@ -75,13 +90,11 @@ def load_security_data(file_path):
             "lambda": lam
         }
 
-    # --- ОБЫЧНАЯ ЗАДАЧА ---
-    elif remaining == 3:
-        c = np.array(list(map(float, lines[idx].split())))
-        idx += 1
+    # ========= ОБЫЧНАЯ =========
+    else:
 
-        d = np.array(list(map(float, lines[idx].split())))
-        idx += 1
+        c, idx = read_numbers(lines, idx, n)
+        d, idx = read_numbers(lines, idx, n)
 
         lam = float(lines[idx])
 
@@ -98,10 +111,6 @@ def load_security_data(file_path):
             "lambda": lam,
             "original_indices": indices
         }
-
-    else:
-        raise ValueError("Неизвестный формат файла")
-
 
 def defuzzify_triangular(cL, cM, cR, dL, dM, dR, method="centroid", alpha=0.5):
 
@@ -152,7 +161,6 @@ def solve_knapsack_pulp(c, A, b):
 
     return None
 
-
 def step2(x0):
 
     indices = [i for i, v in enumerate(x0) if v == 1]
@@ -161,7 +169,6 @@ def step2(x0):
         return 0
 
     return max(indices) + 1
-
 
 def solve_subproblem(args):
 
@@ -202,8 +209,7 @@ def solve_subproblem(args):
 
     return None
 
-
-def solve_problem(data):
+def solve_problem(data, parallel=True):
 
     x0 = solve_knapsack_pulp(data["c"], data["A"], data["b"])
 
@@ -216,8 +222,11 @@ def solve_problem(data):
 
     tasks = [(data, j0, s) for s in range(1, j0)]
 
-    with ProcessPoolExecutor() as executor:
-        results = executor.map(solve_subproblem, tasks)
+    if parallel:
+        with ProcessPoolExecutor() as executor:
+            results = executor.map(solve_subproblem, tasks)
+    else:
+        results = map(solve_subproblem, tasks)
 
     for r in results:
         if r:
@@ -257,11 +266,9 @@ def solve_problem(data):
 
     return best_F, selected, x_orig
 
-
 @app.route("/")
 def index():
     return render_template("index.html")
-
 
 @app.route("/upload", methods=["POST"])
 def upload():
@@ -301,12 +308,14 @@ def upload():
             "dR": data["dR"].tolist()
         })
 
-
 @app.route("/solve", methods=["POST"])
 def solve():
 
     data = request.json
 
+    parallel = data.get("parallel", True)
+
+    start = time.time()
     # =====================
     # НЕЧЕТКАЯ ЗАДАЧА
     # =====================
@@ -362,7 +371,9 @@ def solve():
             "original_indices": original_indices
         }
 
-    result = solve_problem(dataset)
+    result = solve_problem(dataset, parallel=parallel)
+
+    elapsed = time.time() - start
 
     if result is None:
         return jsonify({"error": "No solution"})
@@ -372,9 +383,9 @@ def solve():
     return jsonify({
         "F": round(F, 4),
         "indices": indices,
-        "x": x_vec
+        "x": x_vec,
+        "time": round(elapsed, 4)
     })
-
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()

@@ -48,6 +48,12 @@
                     <option value="hurwicz">Гурвиц</option>
                 </select>
 
+                <label>Режим вычисления</label>
+                <select id="parallelMode">
+                    <option value="true">Параллельный</option>
+                    <option value="false">Последовательный</option>
+                </select>
+
                 <h3>Вектор c</h3>
                 <div id="c_container"></div>
 
@@ -74,6 +80,9 @@
                 <p>Оптимальный вектор x</p>
                 <h2 id="resultX">-</h2>
 
+                <p>Время выполнения (сек)</p>
+                <h2 id="resultTime">-</h2>
+
             </div>
 
         </div>
@@ -86,6 +95,25 @@
 
         function toggleFuzzy() {
             generateGrids();
+        }
+
+        function sortTriangular(a, b, c) {
+            let arr = [a, b, c].map(x => Number(x) || 0);
+            arr.sort((x, y) => x - y);
+            return arr; // [L, M, R]
+        }
+
+        function autoSortTriangular(prefix, j) {
+
+            let l = document.getElementById(`${prefix}_L_${j}`);
+            let m = document.getElementById(`${prefix}_M_${j}`);
+            let r = document.getElementById(`${prefix}_R_${j}`);
+
+            let [L, M, R] = sortTriangular(l.value, m.value, r.value);
+
+            l.value = L;
+            m.value = M;
+            r.value = R;
         }
 
         function generateGrids() {
@@ -180,6 +208,10 @@
                     R.type = "number";
                     R.placeholder = "R";
                     R.id = `${prefix}_R_${j}`;
+                    
+                    L.onchange = () => autoSortTriangular(prefix, j);
+                    M.onchange = () => autoSortTriangular(prefix, j);
+                    R.onchange = () => autoSortTriangular(prefix, j);
 
                     td.append(L, " ", M, " ", R);
                 }
@@ -256,6 +288,7 @@
             let n = +document.getElementById("n").value;
             let mode = document.getElementById("mode").value;
             let method = document.getElementById("defuzz").value;
+            let parallel = document.getElementById("parallelMode").value === "true";
 
             let A = [];
             let b = [];
@@ -270,6 +303,7 @@
             }
 
             let payload = { m, n, A, b, lambda: +document.getElementById("lambda").value };
+            payload.parallel = parallel;
 
             if (mode === "classic") {
 
@@ -320,6 +354,7 @@
                     document.getElementById("resultIndices").innerText = data.indices.join(", ");
                     document.getElementById("resultX").innerText =
                         data.x.map((v, i) => `x[${i}]=${v}`).join(", ");
+                    document.getElementById("resultTime").innerText = data.time + " сек";
                 });
         }
 
